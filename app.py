@@ -24,16 +24,18 @@ class MirroringValidator():
 
         # Table Fields that will be checked/included in the hash string
         fields_mapping = [
+            FieldLink("expense_type_id", "expense_type_id", isid=True),
             FieldLink("list_priority", "list_priority"),
             FieldLink("archive", "archive"),
-            FieldLink("created", "created")
+            FieldLink("created", "created"),
+            FieldLink("updated", "updated")
         ]
 
         mirror = Mirror(
             dbconfig1,
             dbconfig2,
             "StaticExpenseTypes",
-            "StaticExpenseTypes",
+            "StaticExpenseTypes_copy",
             fields_mapping
         )
 
@@ -42,24 +44,8 @@ class MirroringValidator():
         # total.
         # Check for the possibility of querying chunks of data from a
         # temporarytable.
-        mirror.load_db_data()
-        mirror.sort_data()
-        # print(mirror.data1)
-        # print("###########")
-        # print(mirror.data2)
+        mirror.run_diff()
 
-        # TODO generate a hash for each row based on the fields
-        # included in the mapping
-
-        # TODO include data in buckets, the bucket id will be the
-        # hash key.
-        # This way we ensure that a mapping 1 to 1 exists for records
-        # with repeated data.
-
-        # TODO for hashes without pair must inclue an error
-
+        # TODO Export to excel
 
 MirroringValidator.run()
-
-
-

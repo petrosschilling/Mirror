@@ -1,5 +1,6 @@
 import mysql.connector as mariadb
 
+
 class DBA:
 
     def __init__(self, dbconfig):
