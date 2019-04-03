@@ -23,10 +23,10 @@ class MirroringValidator():
         dbconfig2.databse = "mystro"
 
         # Table Fields that will be checked/included in the hash string
-        fields_to_check = [
-            FieldLink("", ""),
-            FieldLink("", ""),
-            FieldLink("", "")
+        fields_mapping = [
+            FieldLink("list_priority", "list_priority"),
+            FieldLink("archive", "archive"),
+            FieldLink("created", "created")
         ]
 
         mirror = Mirror(
@@ -34,21 +34,27 @@ class MirroringValidator():
             dbconfig2,
             "StaticExpenseTypes",
             "StaticExpenseTypes",
-            fields_to_check
+            fields_mapping
         )
 
-        # TODO retrieve all data from database as dictionary
+        # Retrieve all data from database as dictionary
+        # TODO Retrieving the data is working but all the data is 4GB
+        # total.
+        # Check for the possibility of querying chunks of data from a
+        # temporarytable.
         mirror.load_db_data()
-        print(mirror.data1)
-        print("###########")
-        print(mirror.data2)
+        mirror.sort_data()
+        # print(mirror.data1)
+        # print("###########")
+        # print(mirror.data2)
 
+        # TODO generate a hash for each row based on the fields
+        # included in the mapping
 
-
-        # TODO generate a hash for each row based on the fields included in the mapping
-
-        # TODO include data in buckets, the bucket id will be the hash key.
-        # This way we ensure that a mapping 1 to 1 exists for records with repeated data.
+        # TODO include data in buckets, the bucket id will be the
+        # hash key.
+        # This way we ensure that a mapping 1 to 1 exists for records
+        # with repeated data.
 
         # TODO for hashes without pair must inclue an error
 
