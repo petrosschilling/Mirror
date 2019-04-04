@@ -29,80 +29,115 @@ class Mirror:
         self.table_name2 = table_name2
         self.links = links
 
-    def __load_data(self, dbconf, table_name):
+    def run_diff(self):
+        self._dataload()
+        self._datasort()
+        self._isolate_diffs()
+        self.to_csv()
+        # print(str(self.buckets_diff))
+        return self.buckets_diff
+
+    def _where_clause(self, col):
+        where = ""
+        andd = ""
+        clause = ""
+
+        for link in self.links:
+            if link.filter:
+                colname = link.col1 if col == 1 else link.col2
+                filter_val = link.filter1_val if col == 1 else link.filter2_val
+                clause = (
+                    clause
+                    + andd + " "
+                    + colname + " = '" + str(filter_val) + "'")
+                where = "WHERE"
+                andd = "AND"
+
+        return where + clause
+
+    def _queryrun(self, dbconf, table_name, col):
+        where = self._where_clause(col)
         sql = """
             SELECT *
-            FROM %s;
-        """ % table_name
+            FROM %s %s;
+        """ % (table_name, where)
 
         dba = DBA(dbconf)
 
         return dba.dict(sql, [])
 
-    def run_diff(self):
-        self._load_db_data()
-        self._sort_data()
-        self._isolate_diffs()
-        print(str(self.buckets_diff))
-        return self.buckets_diff
+    def _dataload(self):
+        self.data1 = self._queryrun(self.dbconf1, self.table_name1, 1)
+        self.data2 = self._queryrun(self.dbconf2, self.table_name2, 2)
 
-    def _load_db_data(self):
-        self.data1 = self.__load_data(self.dbconf1, self.table_name1)
-        self.data2 = self.__load_data(self.dbconf2, self.table_name2)
-
-    def _sort_data(self):
-        for rec in self.data1:
+    def _datasort(self):
+        for rec1 in self.data1:
             sha = hashlib.sha256()
             for link in self.links:
-                if link.ignore:
-                    continue
-                modifiedval = link.func1(rec[link.col1])
-                sha.update(self._encodestr(modifiedval))
+                if link.uid:
+                    sha.update(self._encodestr(rec1[link.col1]))
 
-            rec['hash'] = sha.hexdigest()
-            self._bucketadd(rec, 'data1')
+            rec1['hash'] = sha.hexdigest()
+            self._bucketadd(rec1, 'data1')
 
-        for rec in self.data2:
+        for rec2 in self.data2:
             sha = hashlib.sha256()
             for link in self.links:
-                if link.ignore:
-                    continue
-                modifiedval = link.func2(rec[link.col2])
-                sha.update(self._encodestr(modifiedval))
+                if link.uid:
+                    sha.update(self._encodestr(rec2[link.col2]))
 
-            rec['hash'] = sha.hexdigest()
-            self._bucketadd(rec, 'data2')
+            rec2['hash'] = sha.hexdigest()
+            self._bucketadd(rec2, 'data2')
 
     def _isolate_diffs(self):
-        id_link = self._get_id_link()
-
         for key in self.buckets.keys():
-            data1_len = len(self.buckets[key]['data1'])
-            data2_len = len(self.buckets[key]['data2'])
+            bucket = self.buckets[key]
 
+            data1 = bucket['data1']
+            data1_len = len(data1)
+            data2 = bucket['data2']
+            data2_len = len(data2)
+
+            # Check for records without match
             if not data1_len == data2_len:
-                self.buckets_diff[key] = self.buckets[key]
+                self.buckets_diff[key] = bucket
+                bucket_diff = self.buckets_diff[key]
+                bucket_diff['message'] = self._message_notfound()
 
-                if data1_len > data2_len:
-                    message = self._create_message(
-                        self.table_name1,
-                        self.buckets_diff[key]['data1'][0][id_link.col1])
-                    self.buckets_diff[key]['message'] = message
-                else:
-                    message = self._create_message(
-                        self.table_name2,
-                        self.buckets_diff[key]['data2'][0][id_link.col2])
-                    self.buckets_diff[key]['message'] = message
+            # Check for differences in the data
+            for link in self.links:
+                if data1_len == 0 or data2_len == 0:
+                    break
 
-    def _create_message(self, table_name, id_value):
-        msg_nomatch = "Table: %s -> Record ID: %s -> Match Not found"
-        return msg_nomatch % (self.table_name2, id_value)
+                # Check if values don't match
+                modifiedval1 = link.func1(data1[0][link.col1])
+                modifiedval2 = link.func2(data2[0][link.col2])
 
-    def _get_id_link(self):
-        for link in self.links:
-            if link.isid:
-                return link
-        return None
+                if modifiedval1 != modifiedval2:
+                    self.buckets_diff[key] = bucket
+                    bucket_diff = self.buckets_diff[key]
+                    bucket_diff['message'] = self._message_valuenotmatch(
+                        link.col1, link.col2)
+
+                # Check if values are of the same type
+                if isinstance(
+                    type(data1[0][link.col1]),
+                    type(data2[0][link.col2])
+                ):
+                    self.buckets_diff[key] = bucket
+                    bucket_diff['message'] = self._message_notsametype(
+                        link.col1, link.col2)
+
+    def _message_notsametype(self, colname1, colname2):
+        msg = "Columns '%s' and '%s' values are not of the same type"
+        return msg % (colname1, colname2)
+
+    def _message_valuenotmatch(self, colname1, colname2):
+        msg = "Colmuns '%s' and '%s' values not match"
+        return msg % (colname1, colname2)
+
+    def _message_notfound(self):
+        return "Matching record not found"
 
     def _encodestr(self, val):
         return str(val).encode(self.ENCODING)
@@ -116,19 +151,47 @@ class Mirror:
     def _bucket(self):
         return {"message": "", 'data1': [], 'data2': []}
 
+    # TODO: Check why line break is not happening
+    def to_csv(self):
+        file = open("results.csv", "w+")
+
+        # File header
+        file.write("Message,,")
+        for link in self.links:
+            file.write(link.col1 + ",")
+        file.write(",,")
+        for link in self.links:
+            file.write(link.col2 + ",")
+        file.write("\n")
+
+        # File data
+        for key in self.buckets_diff.keys():
+            bucket = self.buckets_diff[key]
+            file.write(bucket['message'] + ",")
+            for data in bucket['data1']:
+                for link in self.links:
+                    file.write(str(data[link.col1]) + ",")
+            file.write(",,")
+            for data in bucket['data2']:
+                for link in self.links:
+                    file.write(str(data[link.col2]) + ",")
+            file.write("\n")
+
+        file.close()
+
 
 class FieldLink:
 
     def __init__(
-        self, col1, col2, func1=None, func2=None, isfilter=False,
-        filter_val="", ignore=False, isid=False
+        self, col1, col2, func1=None, func2=None, filterr=False,
+        filter1_val="", filter2_val="", uid=False
     ):
         self.col1 = col1
         self.col2 = col2
-        self.isfilter = isfilter
-        self.filter_val = filter_val
-        self.ignore = ignore
-        self.isid = isid
+        self.filter = filterr
+        self.filter1_val = filter1_val
+        self.filter2_val = filter2_val
+        self.uid = uid
         self.func1 = self.__validate_func(func1)
         self.func2 = self.__validate_func(func2)
 

@@ -4,22 +4,25 @@ import mysql.connector as mariadb
 class DBA:
 
     def __init__(self, dbconfig):
-        self.con = self.create_connection(dbconfig)
-        self.cursor = self.con.cursor()
+        self.dbconfig = dbconfig
 
-    def create_connection(self, dbconfig):
+    def connect(self):
         mariadb_connection = mariadb.connect(
-            host=dbconfig.host,
-            user=dbconfig.usr,
-            password=dbconfig.pwd,
-            database=dbconfig.databse)
+            host=self.dbconfig.host,
+            user=self.dbconfig.usr,
+            password=self.dbconfig.pwd,
+            database=self.dbconfig.databse)
 
         return mariadb_connection
 
     def dict(self, query, params):
-        result = self.cursor.execute(query, params)
-        columns = [col[0] for col in self.cursor.description]
-        rows = [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+        con = self.connect()
+        cur = con.cursor()
+
+        result = cur.execute(query, params)
+        columns = [col[0] for col in cur.description]
+        rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+        con.close()
 
         return rows
 
