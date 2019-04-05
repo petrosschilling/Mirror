@@ -31,9 +31,13 @@ class Mirror:
         self.links = links
 
     def run_diff(self):
+        print("loading data...")
         self._dataload()
+        print("sorting data...")
         self._datasort()
+        print("isolating divergences...")
         self._isolate_diffs()
+        print("finnished.")
         return self.buckets_diff
 
     def _where_clause(self, col):
