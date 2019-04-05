@@ -38,6 +38,7 @@ Let's consider we have the followig structure in the tables we want to compare:
 
 ### First table
 
+#### person
 id | name | gender
 -- | ---- | ------
 1 | John Doe | M
@@ -46,6 +47,7 @@ id | name | gender
 
 ### Second table
 
+#### person
 id | full_name | gender
 -- | ---- | ------
 1 | John Doe | Male
@@ -67,7 +69,7 @@ links = [
 ### Cofigure unique identifiers (UIDs)
 
 To successfully compare the data from the tables, the `Mirror` must know what makes a record in your table unique and these values must match in both tables.
-> In this example we only have the `id` column to distinguish the records. Its preferrable to avoid using it. If not possible you need to make sure the `id` values match for each record. Preferrably use fields that are unique but there is no chance that they will cahnge from one table to another lik `username` or `email`.
+> In this example we only have the `id` column to distinguish the records. Its preferrable to avoid using it. If not possible you need to make sure the `id` values match for each record. Preferrably use fields that are unique but there is no chance that they will cahnge from one table to another like `username` or `email`.
 
 To do this you just need to set the property `uid` to `True` in the field link constructor.
 
@@ -130,4 +132,11 @@ links = [
 
 > You also have the option of parsing the values of the second table using the `func2` argument. This is very unlikely to be used but it is there in case both values need to be converted to something else for comparison.
 
+# The gran finale
 
+After creating the DBConfigurations and all the neccessary links we need the create the `Mirror` object which is who does all the work.
+
+```python
+mirror = Mirror(config, config, "Person", "person", links) # Tables are in the same database since we are using the same configuration.
+mirror.run_diff()
+mirror.to_csv() # Export all the unmatched found to csv file in current directory
