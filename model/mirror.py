@@ -10,6 +10,7 @@ class Mirror:
 
     buckets = {}
     buckets_diff = {}
+    output = []
 
     def __init__(self, dbconf1, dbconf2, table_name1, table_name2, links):
         """
@@ -102,7 +103,9 @@ class Mirror:
             if not data1_len == data2_len:
                 self.buckets_diff[key] = bucket
                 bucket_diff = self.buckets_diff[key]
-                bucket_diff['message'] = self._message_notfound()
+                message = self._message_notfound()
+                bucket_diff['message'] = message
+                self._output_add(message, bucket, link)
 
             # Check for differences in the data
             for link in self.links:
@@ -116,8 +119,9 @@ class Mirror:
                 if modifiedval1 != modifiedval2:
                     self.buckets_diff[key] = bucket
                     bucket_diff = self.buckets_diff[key]
-                    bucket_diff['message'] = self._message_valuenotmatch(
-                        link.col1, link.col2)
+                    message = self._message_valuenotmatch(link.col1, link.col2)
+                    bucket_diff['message'] = message
+                    self._output_add(message, bucket, link)
 
                 # Check if values are of the same type
                 if isinstance(
@@ -125,8 +129,27 @@ class Mirror:
                     type(data2[0][link.col2])
                 ):
                     self.buckets_diff[key] = bucket
-                    bucket_diff['message'] = self._message_notsametype(
-                        link.col1, link.col2)
+                    message = self._message_notsametype(link.col1, link.col2)
+                    bucket_diff['message'] = message
+                    self._output_add(message, bucket, link)
+
+    def _output_add(self, message, bucket, link):
+        err = {
+            'message': message,
+            'val1': bucket['data1'][0][link.col1],
+            'val2': bucket['data2'][0][link.col2],
+            'links': link,
+            'uids1': [],
+            'uids2': []
+        }
+
+        # Look for links that are uids to hel to identify the row with error
+        for l in self.links:
+            if l.uid:
+                err['uids1'].append(bucket['data1'][0][l.col1])
+                err['uids2'].append(bucket['data2'][0][l.col2])
+
+        self.output.append(err)
 
     def _message_notsametype(self, colname1, colname2):
         msg = "Columns '%s' and '%s' values are not of the same type"
@@ -151,31 +174,51 @@ class Mirror:
     def _bucket(self):
         return {"message": "", 'data1': [], 'data2': []}
 
-    # TODO: Check why line break is not happening
     def to_csv(self):
         file = open("results.csv", "w+")
 
         # File header
         file.write("Message,,")
+        file.write("val1,val2,")
         for link in self.links:
-            file.write(link.col1 + ",")
-        file.write(",,")
+            if link.uid:
+                file.write(link.col1 + ",")
+        file.write(",")
         for link in self.links:
-            file.write(link.col2 + ",")
+            if link.uid:
+                file.write(link.col2 + ",")
         file.write("\n")
 
-        # File data
-        for key in self.buckets_diff.keys():
-            bucket = self.buckets_diff[key]
-            file.write(bucket['message'] + ",")
-            for data in bucket['data1']:
-                for link in self.links:
-                    file.write(str(data[link.col1]) + ",")
-            file.write(",,")
-            for data in bucket['data2']:
-                for link in self.links:
-                    file.write(str(data[link.col2]) + ",")
+        # for link in self.links:
+        #     file.write(link.col1 + ",")
+        # file.write(",,")
+        # for link in self.links:
+        #     file.write(link.col2 + ",")
+        # file.write("\n")
+
+        for err in self.output:
+            file.write(str(err['message']) + ",,")
+            file.write(str('"' + err['val1']) + '",')
+            file.write(str('"' + err['val2']) + '",')
+            for uid in err['uids1']:
+                file.write(str(uid) + ",")
+            file.write(",")
+            for uid in err['uids2']:
+                file.write(str(uid) + ",")
             file.write("\n")
+
+        # File data
+        # for key in self.buckets_diff.keys():
+        #     bucket = self.buckets_diff[key]
+        #     file.write(bucket['message'] + ",,")
+        #     for data in bucket['data1']:
+        #         for link in self.links:
+        #             file.write(str(data[link.col1]) + ",")
+        #     file.write(",")
+        #     for data in bucket['data2']:
+        #         for link in self.links:
+        #             file.write(str(data[link.col2]) + ",")
+        #     file.write("\n")
 
         file.close()
 

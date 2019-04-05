@@ -1,4 +1,5 @@
 import mysql.connector as mariadb
+import sshtunnel
 
 
 class DBA:

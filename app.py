@@ -10,6 +10,7 @@ def yn_to_yesno(arg):
     else:
         return arg
 
+
 class MirroringValidator():
 
     def __init__(self):
@@ -38,7 +39,7 @@ class MirroringValidator():
             FieldLink("broker_id", "brokerid"),
             FieldLink("branch_id", "branch_id"),
             FieldLink("lender_id", "bank"),
-            FieldLink("commission_file_id", "file_seq"),
+            FieldLink("commission_file_id", "file_seq", uid=True),
             FieldLink("loan_account_number", "commission_refid"),
             FieldLink("processed", "testrun", func2=yn_to_yesno),
             FieldLink("processed_date", "commission_date"),
@@ -62,8 +63,8 @@ class MirroringValidator():
             FieldLink("file_upload_date", "file_date"),
             FieldLink("original_aggregator", "original_aggregator"),
             FieldLink("remitted_amount", "remit_amount"),
-            FieldLink("excel_worksheet", "sheet", filterr=True, filter1_val=5, filter2_val=5),
-            FieldLink("excel_row", "row"),
+            FieldLink("excel_worksheet", "sheet", uid=True, filterr=True, filter1_val=3, filter2_val=3),
+            FieldLink("excel_row", "row", uid=True),
             FieldLink("run_date", "run_date"),
             FieldLink("auto_allocate", "auto_allocate"),
             FieldLink("vbi_eligible", "vbi_eligible"),
