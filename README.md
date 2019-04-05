@@ -137,6 +137,9 @@ links = [
 After creating the DBConfigurations and all the neccessary links we need the create the `Mirror` object which is who does all the work.
 
 ```python
-mirror = Mirror(config, config, "Person", "person", links) # Tables are in the same database since we are using the same configuration.
+# Tables are in the same database since we are using the same configuration.
+mirror = Mirror(config, config, "Person", "person", links)
+# What actually does all the stuff
 mirror.run_diff()
-mirror.to_csv() # Export all the unmatched found to csv file in current directory
+# Export all the unmatched found to csv file in current directory
+mirror.to_csv()

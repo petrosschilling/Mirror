@@ -34,8 +34,6 @@ class Mirror:
         self._dataload()
         self._datasort()
         self._isolate_diffs()
-        self.to_csv()
-        # print(str(self.buckets_diff))
         return self.buckets_diff
 
     def _where_clause(self, col):

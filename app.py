@@ -80,12 +80,7 @@ class MirroringValidator():
         )
 
         # Retrieve all data from database as dictionary
-        # TODO Retrieving the data is working but all the data is 4GB
-        # total.
-        # Check for the possibility of querying chunks of data from a
-        # temporarytable.
         mirror.run_diff()
-
-        # TODO Export to excel
+        mirror.to_csv()
 
 MirroringValidator.run()
