@@ -18,13 +18,15 @@ To compare two tables you need first to create the Database Configuration to acc
 
 To create a Database Configuration you use the class `dba.DBConfiguration`.
 
-    from dba import DBConfiguration
+```python
+from dba import DBConfiguration
 
-    config = DBConfiguration()
-    config.usr = "dbuser"
-    config.pwd = "dbpassword"
-    config.host = "dbip"
-    config.databse = "dbname"
+config = DBConfiguration()
+config.usr = "dbuser"
+config.pwd = "dbpassword"
+config.host = "dbip"
+config.databse = "dbname"
+```
 
 ## Mapping tables columns
 
@@ -52,11 +54,15 @@ id | full_name | gender
 
 The configuration for a table like this would be:
 
-    links = [
-        FieldLink("id", "id"),
-        FieldLink("name", "full_name"),
-        FieldLink("gender", "gender")
-    ]
+```python
+from dba import FieldLink
+
+links = [
+    FieldLink("id", "id"),
+    FieldLink("name", "full_name"),
+    FieldLink("gender", "gender")
+]
+```
 
 ### Cofigure unique identifiers (UIDs)
 
@@ -65,20 +71,24 @@ To successfully compare the data from the tables, the `Mirror` must know what ma
 
 To do this you just need to set the property `uid` to `True` in the field link constructor.
 
-    links = [
-        FieldLink("id", "id", uid=True),
-        FieldLink("name", "full_name"),
-        FieldLink("gender", "gender")
-    ]
+```python
+links = [
+    FieldLink("id", "id", uid=True),
+    FieldLink("name", "full_name"),
+    FieldLink("gender", "gender")
+]
+```
 
 You can also have more than one field as `uid` e.g.:
 
-    links = [
-        FieldLink("id", "id", uid=True),
-        FieldLink("email", "email", uid=True),
-        FieldLink("name", "full_name"),
-        FieldLink("gender", "gender")
-    ]
+```python
+links = [
+    FieldLink("id", "id", uid=True),
+    FieldLink("email", "email", uid=True),
+    FieldLink("name", "full_name"),
+    FieldLink("gender", "gender")
+]
+```
 
 > What we ar looking for here is to find what makes that record unique trying to ignore the auto generated id field whenever possible.
 
@@ -89,30 +99,34 @@ For this you can use the `filterr` property when initializing your link.
 
 Let's say you only want to compare records of the Male gender:
 
-    links = [
-        FieldLink("id", "id", uid=True),
-        FieldLink("name", "full_name"),
-        FieldLink("gender", "gender", filterr=True, filter1_val="M", filter2_val="Male")
-    ]
+```python
+links = [
+    FieldLink("id", "id", uid=True),
+    FieldLink("name", "full_name"),
+    FieldLink("gender", "gender", filterr=True, filter1_val="M", filter2_val="Male")
+]
+```
 
 ### Functions
 
 You may have noted that the value of `gender` in both tables are different. In this case we will always have a negative when comparing this two tables.
 To be able to get a positive when comparing these values you can create a custom function that will take the column value as an argument and pass it in the `FieldLink` constructor.
 
-    def gender_parser(val):
-        if val == "M":
-            return "Male"
-        elif val == "F":
-            return "Female"
-        else:
-            return val
+```python
+def gender_parser(val):
+    if val == "M":
+        return "Male"
+    elif val == "F":
+        return "Female"
+    else:
+        return val
 
-    links = [
-        FieldLink("id", "id", uid=True),
-        FieldLink("name", "full_name"),
-        FieldLink("gender", "gender", func1=gender_parser)
-    ]
+links = [
+    FieldLink("id", "id", uid=True),
+    FieldLink("name", "full_name"),
+    FieldLink("gender", "gender", func1=gender_parser)
+]
+```
 
 > You also have the option of parsing the values of the second table using the `func2` argument. This is very unlikely to be used but it is there in case both values need to be converted to something else for comparison.
 
