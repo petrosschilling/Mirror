@@ -1,4 +1,5 @@
 import hashlib
+from datetime import datetime
 from inspect import signature
 
 from db.dba import *
@@ -12,20 +13,20 @@ class Mirror:
     buckets_diff = {}
     output = []
 
-    def __init__(self, dbconf1, dbconf2, table_name1, table_name2, links):
+    def __init__(self, dba1, dba2, table_name1, table_name2, links):
         """
         Initializes the configuration for checking the data
 
         Arguments:
-            dbconf1 {DBConfiguration} -- Configuration for connection
+            dba1 {DBA} -- Configuration for connection
             to the database of table 1
-            dbconf2 {DBConfiguration} -- Configuration for connection
-            to the database of table 1
+            dba2 {DBA} -- Configuration for connection
+            to the database of table 2
             links {FieldLink[]} -- Array containing the mapping of
             columns from t1 and t2
         """
-        self.dbconf1 = dbconf1
-        self.dbconf2 = dbconf2
+        self.dba1 = dba1
+        self.dba2 = dba2
         self.table_name1 = table_name1
         self.table_name2 = table_name2
         self.links = links
@@ -65,13 +66,11 @@ class Mirror:
             FROM %s %s;
         """ % (table_name, where)
 
-        dba = DBA(dbconf)
-
-        return dba.dict(sql, [])
+        return dbconf.dict(sql, [])
 
     def _dataload(self):
-        self.data1 = self._queryrun(self.dbconf1, self.table_name1, 1)
-        self.data2 = self._queryrun(self.dbconf2, self.table_name2, 2)
+        self.data1 = self._queryrun(self.dba1, self.table_name1, 1)
+        self.data2 = self._queryrun(self.dba2, self.table_name2, 2)
 
     def _datasort(self):
         for rec1 in self.data1:
@@ -177,7 +176,10 @@ class Mirror:
         return {"message": "", 'data1': [], 'data2': []}
 
     def to_csv(self):
-        file = open("results.csv", "w+")
+        dt = datetime.now()
+        file = open(
+            dt.strftime("%Y-%m-%d %H:%M:%S")
+            + "_results.csv", "w+")
 
         # File header
         file.write("Message,,")
@@ -191,13 +193,6 @@ class Mirror:
                 file.write(link.col2 + ",")
         file.write("\n")
 
-        # for link in self.links:
-        #     file.write(link.col1 + ",")
-        # file.write(",,")
-        # for link in self.links:
-        #     file.write(link.col2 + ",")
-        # file.write("\n")
-
         for err in self.output:
             file.write(str(err['message']) + ",,")
             file.write(str('"' + err['val1']) + '",')
@@ -208,19 +203,6 @@ class Mirror:
             for uid in err['uids2']:
                 file.write(str(uid) + ",")
             file.write("\n")
-
-        # File data
-        # for key in self.buckets_diff.keys():
-        #     bucket = self.buckets_diff[key]
-        #     file.write(bucket['message'] + ",,")
-        #     for data in bucket['data1']:
-        #         for link in self.links:
-        #             file.write(str(data[link.col1]) + ",")
-        #     file.write(",")
-        #     for data in bucket['data2']:
-        #         for link in self.links:
-        #             file.write(str(data[link.col2]) + ",")
-        #     file.write("\n")
 
         file.close()
 

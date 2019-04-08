@@ -1,4 +1,5 @@
 import mysql.connector as mariadb
+from mysql.connector.errors import InterfaceError
 
 
 class DBA:
@@ -25,6 +26,18 @@ class DBA:
         con.close()
 
         return rows
+
+        def testconnection():
+            success = True
+            try:
+                con = self.connect()
+            except InterfaceError as ex:
+                print("Failed to connect to database" + str(ex))
+                sucess = False
+            else:
+                con.close()
+            finally:
+                return success
 
 
 class DBConfiguration:

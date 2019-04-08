@@ -11,6 +11,22 @@ def yn_to_yesno(arg):
         return arg
 
 
+def readdigit(inputmessage=""):
+    val = ""
+    while not val.isdigit():
+        val = input(inputmessage)
+        try:
+            val = int(val)
+            if val <= 0:
+                val = ""
+                print("Value must be greater than 0")
+            else:
+                break
+        except ValueError:
+            print("Value must be an integer")
+    return val
+
+
 class MirroringValidator():
 
     def __init__(self):
@@ -30,6 +46,13 @@ class MirroringValidator():
         dbconfig2.host = "203.176.98.232"
         dbconfig2.databse = "freeol"
 
+        dba1 = DBA(dbconfig1)
+        dba2 = DBA(dbconfig2)
+
+        # Read filter values
+        id1 = readdigit("Comission file id 1: ")
+        id2 = readdigit("Comission file id 1: ")
+
         # Table Fields that will be checked/included in the hash string
         fields_mapping = [
             FieldLink("user_id", "uid"),
@@ -39,7 +62,7 @@ class MirroringValidator():
             FieldLink("broker_id", "brokerid"),
             FieldLink("branch_id", "branch_id"),
             FieldLink("lender_id", "bank"),
-            FieldLink("commission_file_id", "file_seq", uid=True),
+            FieldLink("commission_file_id", "file_seq", uid=True, filterr=True, filter1_val=id1, filter2_val=id2),
             FieldLink("loan_account_number", "commission_refid"),
             FieldLink("processed", "testrun", func2=yn_to_yesno),
             FieldLink("processed_date", "commission_date"),
@@ -63,7 +86,7 @@ class MirroringValidator():
             FieldLink("file_upload_date", "file_date"),
             FieldLink("original_aggregator", "original_aggregator"),
             FieldLink("remitted_amount", "remit_amount"),
-            FieldLink("excel_worksheet", "sheet", uid=True, filterr=True, filter1_val=3, filter2_val=3),
+            FieldLink("excel_worksheet", "sheet", uid=True),
             FieldLink("excel_row", "row", uid=True),
             FieldLink("run_date", "run_date"),
             FieldLink("auto_allocate", "auto_allocate"),
@@ -72,8 +95,8 @@ class MirroringValidator():
         ]
 
         mirror = Mirror(
-            dbconfig1,
-            dbconfig2,
+            dba1,
+            dba2,
             "CommissionsLoanKit",
             "commission",
             fields_mapping
@@ -81,6 +104,8 @@ class MirroringValidator():
 
         # Retrieve all data from database as dictionary
         mirror.run_diff()
+        # Export file to csv
         mirror.to_csv()
+
 
 MirroringValidator.run()
