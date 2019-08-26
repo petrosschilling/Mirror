@@ -92,7 +92,7 @@ links = [
 ]
 ```
 
-> What we ar looking for here is to find what makes that record unique trying to ignore the auto generated id field whenever possible.
+> What we are looking for here is to find what makes that record unique. We can use the id only if it matches in both databases.
 
 ### Filters
 
