@@ -151,8 +151,10 @@ class Mirror:
         # Look for links that are uids to hel to identify the row with error
         for l in self.links:
             if l.uid:
-                err['uids1'].append(bucket['data1'][0][l.col1])
-                err['uids2'].append(bucket['data2'][0][l.col2])
+                if len(bucket['data1']) > 0:
+                    err['uids1'].append(bucket['data1'][0][l.col1])
+                if len(bucket['data2']) > 0:
+                    err['uids2'].append(bucket['data2'][0][l.col2])
 
         self.output.append(err)
 
