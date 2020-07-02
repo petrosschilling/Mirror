@@ -106,7 +106,7 @@ class Mirror:
                 bucket_diff = self.buckets_diff[key]
                 message = self._message_notfound()
                 bucket_diff['message'] = message
-                self._output_add(message, bucket, link)
+                self._output_add(message, bucket)
 
             # Check for differences in the data
             for link in self.links:
@@ -134,15 +134,19 @@ class Mirror:
                     bucket_diff['message'] = message
                     self._output_add(message, bucket, link)
 
-    def _output_add(self, message, bucket, link):
+    def _output_add(self, message, bucket, link=None):
         err = {
             'message': message,
-            'val1': bucket['data1'][0][link.col1],
-            'val2': bucket['data2'][0][link.col2],
+            'val1': '',
+            'val2': '',
             'links': link,
             'uids1': [],
             'uids2': []
         }
+
+        if link is not None:
+            err['val1'] = bucket['data1'][0][link.col1]
+            err['val1'] = bucket['data2'][0][link.col2]
 
         # Look for links that are uids to hel to identify the row with error
         for l in self.links:
